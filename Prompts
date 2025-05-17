@@ -1,3 +1,118 @@
 Chatgpt Prompt:
 To run an python folder & to create and activate the venv:
 I have an Folder name of NextWave with an file name as main.py,models.py,consumers.py,common_functions.py,hasher.py and config.ini and requirements.txt file. I want to run this folder in vs code with an command prompt and create and virtual environment and activate it . Give me the full steps to do this action.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Here’s a complete, step-by-step guide to run your **`NextWave`** folder in **VS Code**, create a **virtual environment**, and **activate it via Command Prompt (Windows)**:
+
+---
+
+## ✅ Step-by-Step Guide for Running `NextWave` Project in VS Code
+
+### 🗂️ Your Project Folder (`NextWave`) contains:
+
+```
+NextWave/
+├── main.py
+├── models.py
+├── consumers.py
+├── common_functions.py
+├── hasher.py
+├── config.ini
+├── requirements.txt
+```
+
+---
+
+### 🔧 Step 1: Open Folder in VS Code
+
+1. **Launch VS Code**.
+2. Go to `File > Open Folder`.
+3. Select the folder named **`NextWave`**.
+4. VS Code will open with the folder and files listed in the Explorer sidebar.
+
+---
+
+### 💻 Step 2: Open Integrated Terminal (or Command Prompt)
+
+You can use either:
+
+#### ▶ Option A: VS Code Terminal
+
+* Press <kbd>Ctrl</kbd> + <kbd>\`</kbd> (backtick) to open the terminal in VS Code.
+
+#### ▶ Option B: Command Prompt
+
+* Open Command Prompt.
+* Navigate to the folder:
+
+  ```cmd
+  cd path\to\NextWave
+  ```
+
+Example:
+
+```cmd
+cd C:\Users\YourName\Documents\NextWave
+```
+
+---
+
+### 🐍 Step 3: Create a Virtual Environment
+
+In the terminal (VS Code or Command Prompt), run:
+
+```cmd
+python -m venv venv
+```
+
+This will create a folder named `venv/` inside your `NextWave` directory.
+
+---
+
+### 🔥 Step 4: Activate the Virtual Environment (on Windows)
+
+```cmd
+venv\Scripts\activate
+```
+
+Once activated, you’ll see `(venv)` at the beginning of the command line.
+
+---
+
+### 📦 Step 5: Install Dependencies from `requirements.txt`
+
+Make sure the virtual environment is activated, then run:
+
+```cmd
+pip install -r requirements.txt
+```
+
+This installs all necessary packages your project needs.
+
+---
+
+### 🚀 Step 6: Run Your Python Script
+
+For example, if you want to run `main.py`:
+
+```cmd
+python main.py
+```
+
+---
+
+### ✅ Bonus Tips
+
+* To **deactivate** the virtual environment, just run:
+
+  ```cmd
+  deactivate
+  ```
+
+* If you're using Git, be sure to add `venv/` to `.gitignore`.
+
+---
+
+Would you like me to generate a `.gitignore` or starter `README.md` file for this project?
