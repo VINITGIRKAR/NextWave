@@ -1,3 +1,8 @@
+https://nsq.io/deployment/installing.html
+https://nsq.io/
+https://github.com/nsqio/nsq/releases
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 Chatgpt Prompt:
 To run an python folder & to create and activate the venv:
 I have an Folder name of NextWave with an file name as main.py,models.py,consumers.py,common_functions.py,hasher.py and config.ini and requirements.txt file. I want to run this folder in vs code with an command prompt and create and virtual environment and activate it . Give me the full steps to do this action.
