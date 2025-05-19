@@ -1,1 +1,162 @@
+This is an function define for load_state(with parameter of user_id=None):
+
+def load_states(user_id=None):
+    try:
+        # print("user id to fetch states: ", user_id)
+        all_states = []
+                                           
+        if user_id:
+            if redis_client.json().get(f"tbl_state_{user_id}", "$"):
+                all_states = redis_client.json().get(f"tbl_state_{user_id}", "$")
+            else:
+                all_states = redis_client.json().get(f"all_states", "$")
+            # print("Fetched states from redis for user: ", all_states)
+
+        else:
+            all_states = redis_client.json().get(f"all_states", "$")
+            # print("Fetched all states from redis  ", all_states)
+
+        if all_states:
+            return all_states[0]
+
+        if user_id:
+
+            user_state_ids = foCommon.db_execute(
+                connection=db_connect,
+                querydata=f"SELECT up_access_ids FROM tbl_user_permission WHERE up_user_id = ? AND up_access_type = ?",
+                params=(user_id, "tbl_state"),
+                fetchData=True,
+                log=log,
+            )
+
+            user_state_ids = (
+                user_state_ids[0].get("up_access_ids") if user_state_ids else None
+            )
+            user_state_ids = (
+                [int(id) for id in user_state_ids.split(",")]
+                if user_state_ids
+                else None
+            )
+            if user_state_ids:
+                placeholder = ",".join(["?"] * len(user_state_ids))
+                all_states = foCommon.db_execute(
+                    connection=db_connect,
+                    querydata=f"SELECT * FROM tbl_state WHERE ts_is_deleted = ? AND ts_id in ({placeholder})",
+                    params=(0, *user_state_ids),
+                    fetchData=True,
+                    log=log,
+                )
+                # print("Fetched states from db for user: ", user_id)
+                outp = redis_client.json().set(
+                    f"tbl_state_{user_id}", "$", serialize_dates(all_states)
+                )
+            # print("outp: ", outp)
+
+        else:
+
+            all_states = foCommon.db_execute(
+                connection=db_connect,
+                querydata=f"SELECT * FROM tbl_state WHERE ts_is_deleted = ?",
+                params=(0,),
+                fetchData=True,
+                log=log,
+            )
+
+            # print("Fetched states from db for user: ", user_id)
+            outp = redis_client.json().set(
+                f"all_states", "$", serialize_dates(all_states)
+            )
+            # print("Fetched all states from db : ")
+        return serialize_dates(all_states)
+    except Exception as e:
+        raise ValueError(f"Exception in load_state: {e}")
+
+This is an function define for load_district(with parameter of user_id=None and state_id=None):
+
+def load_district(user_id=None, state_id=None):
+    try:
+        # print("user id to fetch district: ", user_id)
+        all_district = []
+
+        if user_id:
+            if redis_client.json().get(f"tbl_district_{user_id}", "$"):
+                all_district = redis_client.json().get(f"tbl_district_{user_id}", "$")
+                # print("Fetched district from redis for user: ", all_district)
+            else:
+                all_district = redis_client.json().get(f"all_district", "$")
+                # print("Fetched all district from redis: ", all_district)
+
+        elif state_id:
+            if redis_client.json().get(f"tbl_district_state_{state_id}", "$"):
+                all_district = redis_client.json().get(
+                    f"tbl_district_state_{state_id}", "$"
+                )
+
+        else:
+            all_district = redis_client.json().get(f"all_district", "$")
+            # print("Fetched all district from redis: ", all_district)
+
+        if all_district:
+            return all_district[0]
+
+        if user_id:
+            user_district_ids = foCommon.db_execute(
+                connection=db_connect,
+                querydata=f"SELECT up_access_ids FROM tbl_user_permission WHERE up_user_id = ? AND up_access_type = ?",
+                params=(user_id, "tbl_district"),
+                fetchData=True,
+                log=log,
+            )
+
+            user_district_ids = (
+                user_district_ids[0].get("up_access_ids") if user_district_ids else None
+            )
+            user_district_ids = (
+                [int(id) for id in user_district_ids.split(",")]
+                if user_district_ids
+                else None
+            )
+            if user_district_ids:
+                placeholder = ",".join(["?"] * len(user_district_ids))
+                all_district = foCommon.db_execute(
+                    connection=db_connect,
+                    querydata=f"SELECT * FROM tbl_district WHERE td_is_deleted = ? AND td_id in ({placeholder})",
+                    params=(0, *user_district_ids),
+                    fetchData=True,
+                    log=log,
+                )
+                # print("Fetched district from db for user: ", user_id)
+                outp = redis_client.json().set(
+                    f"tbl_district_{user_id}", "$", serialize_dates(all_district)
+                )
+            # print("outp: ", outp)
+
+        elif state_id:
+            
+            all_district = foCommon.db_execute(
+                connection=db_connect,
+                querydata="SELECT * FROM tbl_district WHERE td_state_id = ? AND td_is_deleted = ?",
+                params=(state_id, 0),
+                fetchData=True,
+                log=log,
+            )
+                        
+            outp = redis_client.json().set(f"tbl_district_state_{state_id}", "$", serialize_dates(all_district))
+         
+        else:
+            all_district = foCommon.db_execute(
+                connection=db_connect,
+                querydata=f"SELECT * FROM tbl_district WHERE td_is_deleted = ?",
+                params=(0,),
+                fetchData=True,
+                log=log,
+            )
+            # print("Fetched all district from db: ")
+
+        return serialize_dates(all_district)
+    except Exception as e:
+        raise ValueError(f"Exception in load_district: {e}")
+
+This is function define for load_cities():
+
 
