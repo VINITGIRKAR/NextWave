@@ -77,7 +77,7 @@ def load_cities(user_id=None, district_id=None, state_id=None):
                 fetchData=True,
                 log=log,
             )
-            redis_client.json().set("all_cities", "$", serialize_dates(all_cities))
+            redis_client.json().set(f"all_cities", "$", serialize_dates(all_cities))
 
         return serialize_dates(all_cities)
 
