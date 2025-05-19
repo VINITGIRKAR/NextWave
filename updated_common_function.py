@@ -476,7 +476,7 @@ def load_states(user_id=None):
         raise ValueError(f"Exception in load_state: {e}")
 
 
-def load_district(user_id=None):
+def load_district(user_id=None, state_id=None):
     try:
         # print("user id to fetch district: ", user_id)
         all_district = []
@@ -488,6 +488,12 @@ def load_district(user_id=None):
             else:
                 all_district = redis_client.json().get(f"all_district", "$")
                 # print("Fetched all district from redis: ", all_district)
+
+        elif state_id:
+            if redis_client.json().get(f"tbl_district_state_{state_id}", "$"):
+                all_district = redis_client.json().get(
+                    f"tbl_district_state_{state_id}", "$"
+                )
 
         else:
             all_district = redis_client.json().get(f"all_district", "$")
@@ -528,6 +534,18 @@ def load_district(user_id=None):
                 )
             # print("outp: ", outp)
 
+        elif state_id:
+            
+            all_district = foCommon.db_execute(
+                connection=db_connect,
+                querydata="SELECT * FROM tbl_district WHERE td_state_id = ? AND td_is_deleted = ?",
+                params=(state_id, 0),
+                fetchData=True,
+                log=log,
+            )
+                        
+            outp = redis_client.json().set(f"tbl_district_state_{state_id}", "$", serialize_dates(all_district))
+         
         else:
             all_district = foCommon.db_execute(
                 connection=db_connect,
@@ -541,7 +559,6 @@ def load_district(user_id=None):
         return serialize_dates(all_district)
     except Exception as e:
         raise ValueError(f"Exception in load_district: {e}")
-
 
 def load_cities(user_id=None, district_id=None, state_id=None):
     try:
