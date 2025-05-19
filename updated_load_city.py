@@ -53,7 +53,7 @@ def load_cities(user_id=None, district_id=None, state_id=None):
                 fetchData=True,
                 log=log,
             )
-            redis_client.json().set(f"tbl_city_district_{district_id}", "$", serialize_dates(all_cities))
+            outp = redis_client.json().set(f"tbl_city_district_{district_id}", "$", serialize_dates(all_cities))
 
         elif state_id:
             all_cities = foCommon.db_execute(
@@ -67,7 +67,7 @@ def load_cities(user_id=None, district_id=None, state_id=None):
                 fetchData=True,
                 log=log,
             )
-            redis_client.json().set(f"tbl_city_state_{state_id}", "$", serialize_dates(all_cities))
+            outp = redis_client.json().set(f"tbl_city_state_{state_id}", "$", serialize_dates(all_cities))
 
         else:
             all_cities = foCommon.db_execute(
@@ -77,7 +77,7 @@ def load_cities(user_id=None, district_id=None, state_id=None):
                 fetchData=True,
                 log=log,
             )
-            redis_client.json().set(f"all_cities", "$", serialize_dates(all_cities))
+            outp = redis_client.json().set(f"all_cities", "$", serialize_dates(all_cities))
 
         return serialize_dates(all_cities)
 
