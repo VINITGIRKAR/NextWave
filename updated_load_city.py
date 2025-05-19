@@ -2,29 +2,22 @@ def load_cities(user_id=None, district_id=None, state_id=None):
     try:
         all_cities = []
 
-        # Redis cache priority
         if user_id:
-            redis_key = f"tbl_city_{user_id}"
-            if redis_client.json().get(redis_key, "$"):
+            if redis_client.json().get(f"tbl_city_{user_id}", "$"):
                 all_cities = redis_client.json().get(redis_key, "$")
         elif district_id:
-            redis_key = f"tbl_city_district_{district_id}"
-            if redis_client.json().get(redis_key, "$"):
+            if redis_client.json().get(f"tbl_city_district_{district_id}", "$"):
                 all_cities = redis_client.json().get(redis_key, "$")
         elif state_id:
-            redis_key = f"tbl_city_state_{state_id}"
-            if redis_client.json().get(redis_key, "$"):
+            if redis_client.json().get(f"tbl_city_state_{state_id}", "$"):
                 all_cities = redis_client.json().get(redis_key, "$")
         else:
-            redis_key = "all_cities"
-            if redis_client.json().get(redis_key, "$"):
+            if redis_client.json().get(f"all_cities", "$"):
                 all_cities = redis_client.json().get(redis_key, "$")
 
-        # If found in Redis, return first level data
         if all_cities:
             return all_cities[0]
 
-        # DB fallback
         if user_id:
             user_city_ids = foCommon.db_execute(
                 connection=db_connect,
