@@ -410,7 +410,7 @@ def load_states(user_id=None):
         all_states = []
 
         if user_id:
-            if redis_client.json().get(f"tbl_state_{user_id}", "$"):
+            if redis_client.json().get(f"tbl_state_{user_id}", "$"):  #redis_key=f"tbl_state_{user_id}"
                 all_states = redis_client.json().get(f"tbl_state_{user_id}", "$")
             else:
                 all_states = redis_client.json().get(f"all_states", "$")
