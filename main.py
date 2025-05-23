@@ -34,6 +34,12 @@ from common_functions import (
     delete_batch,
     fetch_rf_batches_data,
     fetch_rf_data,
+    fetch_entities,
+    create_entity_helper,
+    update_entity_helper,
+    delete_entity_helper,
+    fetch_entity_by_id,
+    test_func,
 )
 from models import (
     User,
@@ -41,7 +47,7 @@ from models import (
 
 
 config_path = os.getenv(
-    "NEXTWAVE_CONFIG_PATH", "/neuralit/web/apps/python/Nextwave/config.ini"
+    "NEXTWAVE_CONFIG_PATH", "/home/neuralit/Documents/nextwave_workspace/Backend/Nextwave/config.ini"
 )
 components = foLoader.load_application(
     config_path,
@@ -300,6 +306,21 @@ async def get_states(user_id: int = None):
             log.error(f"Exception in get_states: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+# changes by vinit.g
+@app.get("/get-districts/{state_id}")
+async def get_districts(user_id: int = None, state_id: int = None):
+    try:
+        districts = load_district(user_id=user_id, state_id=state_id)
+
+        if districts:
+            return JSONResponse(content={"districts": districts})
+        else:
+            return JSONResponse(content={"districts": [], "message": "No districts found"})
+    except Exception as e:
+        if log:
+            log.error(f"Exception in get_districts: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
 
 @app.get("/get-cities/{state_id}")
 async def get_cities(state_id: int):
@@ -369,7 +390,9 @@ async def get_devices(operator_id: int):
 
 
 @app.get("/get-batches")
-async def get_batches(state: int, city: int, operator: int, date: Optional[str] = None, device_id=None):
+async def get_batches(
+    state: int, city: int, operator: int, date: Optional[str] = None, device_id=None
+):
     try:
         batches = fetch_batches_data(
             state=state, city=city, operator=operator, date=date, device_id=device_id
@@ -677,6 +700,7 @@ async def delete_batches(
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
+
 @app.get("/get-rf-batches")
 async def get_rf_batches(
     state: int, city: int, operator: int, date: Optional[str] = None, device_id:int = None
@@ -725,3 +749,94 @@ async def get_rf_report(
         if log:
             log.error(f"Error in get_rf_report: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
+    
+@app.get("/test-health")
+async def testhealth(): 
+    try:
+        result = test_func()
+        return result
+    except Exception as e:  
+        if log:
+            log.error(f"Exception in test api: {e}")
+        return JSONResponse(content={"error23": str(e)}, status_code=500)
+
+# changes by prerna
+@app.get("/masters/{entity_type}")
+async def get_entities(
+    entity_type: str,
+    state_id: Optional[str] = None,
+    district_id: Optional[str] = None,
+    city_id: Optional[str] = None,
+    operator_id: Optional[str] = None,
+    name: Optional[str] = None
+):
+    try:
+        valid_entities = ["states", "districts", "cities", "operators", "devices"]
+        if entity_type not in valid_entities:
+            raise ValueError("Invalid entity type")
+
+        entities = fetch_entities(
+            collection_name=entity_type,
+            state_id=state_id,
+            district_id=district_id,
+            city_id=city_id,
+            operator_id=operator_id,
+            name=name
+        )
+        return entities
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/{entity_type}/{entity_id}")
+async def get_entity(entity_type: str, entity_id: str):
+    try:
+        entity = fetch_entity_by_id(entity_type, entity_id)
+        if not entity:
+            return JSONResponse(content={"error": "Not found"}, status_code=404)
+        return entity
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/{entity_type}")
+async def create_entity(entity_type: str, entity_data: dict):
+    try:
+        required_fields = {
+            "states": ["ts_name"],
+            "districts": ["name", "stateId"],
+            "cities": ["name", "stateId", "districtId"],
+            "operators": ["name", "cityId", "districtId", "stateId"],
+            "devices": ["name", "operatorId", "cityId", "districtId", "stateId"]
+        }
+
+        # Validate required fields
+        missing = [field for field in required_fields[entity_type] if field not in entity_data]
+        if missing:
+            raise ValueError(f"Missing required fields: {missing}")
+
+        created_id = create_entity_helper(entity_type, entity_data)
+        return {"id": created_id}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=400)
+
+
+@app.put("/{entity_type}/{entity_id}")
+async def update_entity(entity_type: str, entity_id: str, update_data: dict):
+    try:
+        updated_count = update_entity_helper(entity_type, entity_id, update_data)
+        if updated_count == 0:
+            return JSONResponse(content={"error": "Not found"}, status_code=404)
+        return {"updated": True}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=400)
+
+
+@app.delete("/{entity_type}/{entity_id}")
+async def delete_entity(entity_type: str, entity_id: str):
+    try:
+        deleted_count = delete_entity_helper(entity_type, entity_id)
+        if deleted_count == 0:
+            return JSONResponse(content={"error": "Not found"}, status_code=404)
+        return {"deleted": True}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
