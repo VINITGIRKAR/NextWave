@@ -17,7 +17,7 @@ import uuid
 import httpx
 
 config_path = os.getenv(
-    "NEXTWAVE_CONFIG_PATH", "/neuralit/web/apps/python/Nextwave/config.ini"
+    "NEXTWAVE_CONFIG_PATH", "/home/neuralit/Documents/nextwave_workspace/Backend/Nextwave/config.ini"
 )
 components = foLoader.load_application(
     config_path,
@@ -408,9 +408,9 @@ def load_states(user_id=None):
     try:
         # print("user id to fetch states: ", user_id)
         all_states = []
-
+        #Redis_Key = f"tbl_state_{user_id}"
         if user_id:
-            if redis_client.json().get(f"tbl_state_{user_id}", "$"):  #redis_key=f"tbl_state_{user_id}"
+            if redis_client.json().get(f"tbl_state_{user_id}", "$"):
                 all_states = redis_client.json().get(f"tbl_state_{user_id}", "$")
             else:
                 all_states = redis_client.json().get(f"all_states", "$")
@@ -560,22 +560,24 @@ def load_district(user_id=None, state_id=None):
     except Exception as e:
         raise ValueError(f"Exception in load_district: {e}")
 
+
+# change by vinit.g
 def load_cities(user_id=None, district_id=None, state_id=None):
     try:
         all_cities = []
 
         if user_id:
             if redis_client.json().get(f"tbl_city_{user_id}", "$"):
-                all_cities = redis_client.json().get(redis_key, "$")
+                all_cities = redis_client.json().get(f"tbl_city_{user_id}", "$")
         elif district_id:
             if redis_client.json().get(f"tbl_city_district_{district_id}", "$"):
-                all_cities = redis_client.json().get(redis_key, "$")
+                all_cities = redis_client.json().get(f"tbl_city_district_{district_id}", "$")
         elif state_id:
             if redis_client.json().get(f"tbl_city_state_{state_id}", "$"):
-                all_cities = redis_client.json().get(redis_key, "$")
+                all_cities = redis_client.json().get(f"tbl_city_state_{state_id}", "$")
         else:
             if redis_client.json().get(f"all_cities", "$"):
-                all_cities = redis_client.json().get(redis_key, "$")
+                all_cities = redis_client.json().get(f"all_cities", "$")
 
         if all_cities:
             return all_cities[0]
@@ -645,6 +647,7 @@ def load_cities(user_id=None, district_id=None, state_id=None):
 
     except Exception as e:
         raise ValueError(f"Exception in load_cities: {e}")
+
 
 
 def load_operators(user_id=None):
@@ -1073,9 +1076,7 @@ def submit_device_channel_images_data(
 
         tbl_device_channel_images_data = db_client["tbl_device_channel_images_data"]
         tbl_last_sequence_data = db_client["tbl_last_sequence_data"]
-        
-        batch = batch.split()[0]
-        
+
         filter_query = {
             "state": int(state),
             "city": int(city),
@@ -1421,3 +1422,110 @@ def fetch_rf_data(unique_key: str):
     except Exception as e:
         raise Exception(f"Error in `fetch_rf_data`: {e}")
 
+# changes by prerna
+
+def fetch_entities(
+    collection_name: str,
+    state_id: Optional[str] = None,
+    district_id: Optional[str] = None,
+    city_id: Optional[str] = None,
+    operator_id: Optional[str] = None,
+    name: Optional[str] = None
+) -> List[dict]:
+    try:
+        coll = db_client[collection_name]
+        filter_query = {"isDeleted": {"$ne": 1}}
+
+        # Add hierarchical filters based on collection
+        parent_filters = {
+            "states": [],
+            "districts": ["stateId"],
+            "cities": ["stateId", "districtId"],
+            "operators": ["cityId", "districtId", "stateId"],
+            "devices": ["operatorId", "cityId", "districtId", "stateId"]
+        }
+
+        for field in parent_filters[collection_name]:
+            if locals().get(f"{field.lower()}_id"):
+                filter_query[field] = locals()[f"{field.lower()}_id"]
+
+        if name:
+            filter_query["name"] = {"$regex": name, "$options": "i"}
+
+        return list(coll.find(filter_query, {"_id": 1, "name": 1, "type": 1}))
+
+    except Exception as e:
+        if log:
+            log.error(f"Error fetching {collection_name}: {e}", exc_info=True)
+        raise
+
+def fetch_entity_by_id(collection_name: str, entity_id: str) -> Optional[dict]:
+    try:
+        coll = db_client[collection_name]
+        return coll.find_one({"_id": entity_id, "isDeleted": {"$ne": 1}})
+    except Exception as e:
+        if log:
+            log.error(f"Error fetching {collection_name} by ID: {e}", exc_info=True)
+        raise
+
+def get_next_sequence_value(collection_name: str) -> int:
+    counter_coll = db_client["counters"]  # A separate collection to manage sequence values
+    counter_doc = counter_coll.find_one_and_update(
+        {"_id": collection_name},
+        {"$inc": {"seq": 1}},
+        upsert=True,
+        return_document=True
+    )
+    return counter_doc["seq"]
+
+def create_entity_helper(collection_name: str, entity_data: dict) -> str:
+    try:
+        coll = db_client[collection_name]
+        
+        if collection_name == "states":
+            ts_id = get_next_sequence_value("states")
+            entity_data["ts_id"] = ts_id 
+        
+        entity_data["ts_created_date"] = datetime.utcnow()
+        entity_data["ts_is_deleted"] = 0  
+        entity_data["ts_deleted_on"] = None 
+        entity_data["ts_deleted_uid"] = None  
+
+        entity_data["_id"] = str(uuid.uuid4()) 
+        result = coll.insert_one(entity_data)
+        return str(result.inserted_id)
+    except Exception as e:
+        if log:
+            log.error(f"Error creating {collection_name}: {e}", exc_info=True)
+        raise
+def update_entity_helper(collection_name: str, entity_id: str, update_data: dict) -> int:
+    try:
+        coll = db_client[collection_name]
+        update_data["updatedAt"] = datetime.utcnow()
+        result = coll.update_one(
+            {"_id": entity_id, "isDeleted": {"$ne": 1}},
+            {"$set": update_data}
+        )
+        return result.modified_count
+    except Exception as e:
+        if log:
+            log.error(f"Error updating {collection_name}: {e}", exc_info=True)
+        raise
+
+def delete_entity_helper(collection_name: str, entity_id: str) -> int:
+    try:
+        coll = db_client[collection_name]
+        result = coll.update_one(
+            {"_id": entity_id},
+            {"$set": {"isDeleted": 1, "deletedAt": datetime.utcnow()}}
+        )
+        return result.modified_count
+    except Exception as e:
+        if log:
+            log.error(f"Error deleting {collection_name}: {e}", exc_info=True)
+        raise
+
+
+
+def test_func():
+    return "alive"
