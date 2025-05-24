@@ -86,6 +86,15 @@ def archive_old_data():
                 ids_to_delete = [doc["_id"] for doc in batch]
                 source_collection.delete_many({"_id": {"$in": ids_to_delete}})
 
+                # Delete the archived documents from the source collection
+                # ids_to_delete = [doc["_id"] for doc in batch]
+                # source_collection.delete_many({"_id": {"$in": ids_to_delete}})
+
+                # Uncomment the following line if you want to keep the documents in the source collection
+                # instead of deleting them after archiving.
+                #ids_not_to_delete = [doc["_id"] for doc in batch]
+                #source_collection.insert_many({"_id": {"$in": ids_not_to_delete}})
+
                 total_archived += len(batch)
                 if log:
                     log.info(f"Archived {len(batch)} documents in current batch")
