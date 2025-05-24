@@ -31,7 +31,7 @@ def delete_old_archived_data():
         config = components["config"]
         log = components.get("log")
         
-        cron_type = "ARCHIVE_DELETION"
+        cron_type = "ARCHIVE_DELETION_MONGO_DATA"
 
         datalake_type = config.get("DATA_LAKE", "type")
         datalake_host = config.get("DATA_LAKE", "host")
