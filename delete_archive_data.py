@@ -56,7 +56,7 @@ def delete_old_archived_data():
 
             # Calculate threshold date (30 days from now)
             # Calculate threshold date (1 year ago from now)
-            threshold_date = datetime.utcnow() - timedelta(days=365)
+            threshold_date = datetime.utcnow() - timedelta(days=delete_after_days)
             threshold_date_str = threshold_date.date().strftime("%Y-%m-%d")
 
             if log:
